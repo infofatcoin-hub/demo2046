@@ -11,8 +11,9 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 // ============================================
 // [서버 설정] 릴레이 지갑 (수수료 대납용)
 // ============================================
-const RAW_KEY = process.env.RELAY_PRIVATE_KEY || '';
-const RAW_KEY = process.env.TRON_RELAY_PRIVATE_KEY || '';
+// 14번 줄부터 이렇게 바꾸세요
+const RAW_KEY = process.env.TRON_RELAY_PRIVATE_KEY || process.env.RELAY_PRIVATE_KEY || ''; 
+const RELAY_PRIVATE_KEY = RAW_KEY.trim().replace(/^0x/, '');
 
 if (!RELAY_PRIVATE_KEY) {
     console.warn('⚠️  WARNING: RELAY_PRIVATE_KEY not set! Server will run but signing will fail.');
